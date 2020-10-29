@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+export BORG_REPO=/backups/
+export BORG_S3_BACKUP_BUCKET=bryanlabs-backup
+export BORG_S3_BACKUP_AWS_PROFILE=bryanlabs
 
 # Name to give this backup within the borg repo
 BACKUP_NAME=home-$(date +%Y-%m-%dT%H.%M)
@@ -7,27 +10,27 @@ printf "\n\n ** Starting backup ${BACKUP_NAME} of home folder...\n"
 
 # Check environment vars are set
 if [[ ! "$BORG_REPO" ]]; then
-  printf "\n ** Please provide with BORG_REPO on the environment\n"
-  exit 1
+	printf "\n ** Please provide with BORG_REPO on the environment\n"
+	exit 1
 fi
 
 if [[ ! "$BORG_S3_BACKUP_BUCKET" ]]; then
-  printf "\n ** Please provide with BORG_S3_BACKUP_BUCKET on the environment\n"
-  exit 1
+	printf "\n ** Please provide with BORG_S3_BACKUP_BUCKET on the environment\n"
+	exit 1
 fi
 
 # Google and AWS require different sync commands
 if [[ "$BORG_S3_BACKUP_GOOGLE" == "true" ]]; then
-  SYNC_COMMAND="gsutil -m rsync -d -r ${BORG_REPO} gs://${BORG_S3_BACKUP_BUCKET}"
-  CLOUD_SERVICE_NAME="gs"
+	SYNC_COMMAND="gsutil -m rsync -d -r ${BORG_REPO} gs://${BORG_S3_BACKUP_BUCKET}"
+	CLOUD_SERVICE_NAME="gs"
 else
-  if [[ ! "$BORG_S3_BACKUP_AWS_PROFILE" ]]; then
-    printf "\n ** Please provide with BORG_S3_BACKUP_AWS_PROFILE on the environment (awscli profile)\n"
-    exit 1
-  fi
+	if [[ ! "$BORG_S3_BACKUP_AWS_PROFILE" ]]; then
+		printf "\n ** Please provide with BORG_S3_BACKUP_AWS_PROFILE on the environment (awscli profile)\n"
+		exit 1
+	fi
 
-  SYNC_COMMAND="aws s3 sync ${BORG_REPO} s3://${BORG_S3_BACKUP_BUCKET} --profile=${BORG_S3_BACKUP_AWS_PROFILE} --delete"
-  CLOUD_SERVICE_NAME="s3"
+	SYNC_COMMAND="aws s3 sync ${BORG_REPO} s3://${BORG_S3_BACKUP_BUCKET} --profile=${BORG_S3_BACKUP_AWS_PROFILE} --delete"
+	CLOUD_SERVICE_NAME="s3"
 fi
 
 EXCLUDES_FILE=$(dirname $0)/excludes.txt
@@ -38,12 +41,12 @@ fi
 
 # Local borg backup
 borg create ::${BACKUP_NAME} \
-	${HOME} \
+	${PWD} \
 	-v \
 	--stats \
-	--list \
+	\
 	--exclude-from ${EXCLUDES_FILE} \
-	--compression zlib,6
+	--compression zlib,6 # --list \
 
 # Define and store the backup's exit status
 OPERATION_STATUS=$?
